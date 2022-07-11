@@ -31,18 +31,16 @@ def circulant_vec(size: int, indices: int) -> list[float]:
     return sequence[::-1]
 
 
-def assoc_poly():
-    sequence = circulant_vec(SIZE, SCALE)
+def invertible(matrix: list[float]) -> bool:
     x = symbols("x")
-    f = Poly(sequence[::-1], x)
+    f = Poly(matrix[::-1], x)
     cg = [0] * (SIZE * SIZE + 1)
     cg[0] = 1
     cg[-1] = -1
     g = Poly(cg, x)
     
-    print("gcd")
-    res = gcd(f, g)
-    print(res)
+    res: Poly = gcd(f, g)
+    return res.degree()
 
 
 def circ_inv_mul(matrix: ArrayLike, vec: ArrayLike) -> ArrayLike:
