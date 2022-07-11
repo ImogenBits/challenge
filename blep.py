@@ -83,12 +83,12 @@ def encode(image: Image.Image) -> Image.Image:
     image_arr = asarray(image)
     result = ndarray((width, height))
     offsets = enc_coords(width, INDICES)
-    for i in tqdm(range(width)):
-        for j in range(height):
+    for y in tqdm(range(width)):
+        for x in range(height):
             value = 0
             for dx, dy in offsets:
-                value += image_arr[((i + dx) % width, (j + dy + (i + dx)//width) % height)]
-            result[i, j] = value / INDICES
+                value += image_arr[((y + dy + (x + dx)//width) % height), (x + dx) % width]
+            result[y, x] = value / INDICES
     return Image.fromarray(result)
 
 
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     encoded_fast.convert("RGB").save("encoded_fast.png")
 
     with timed("decode"):
-        decoded = decode(encoded_fast)
+        decoded = decode(encoded)
     decoded.convert("RGB").save("decoded.png")
     
 
