@@ -2,10 +2,11 @@ from tqdm import tqdm
 from sympy.polys import Poly
 from sympy import symbols, gcd
 from PIL import Image
-from numpy import asarray, ndarray, real, reshape
+from numpy import asarray, real, reshape
+from numpy.typing import ArrayLike
 from numpy.fft import fft, ifft
 
-SCALE = 2 ** 3
+SCALE = 2 ** 0
 SIZE = 512 // SCALE
 INDICES = 32 // SCALE
 
@@ -44,7 +45,7 @@ def assoc_poly():
     print(res)
 
 
-def circ_inv_mul(matrix: list[float], vec: list[float] | ndarray) -> ndarray:
+def circ_inv_mul(matrix: ArrayLike, vec: ArrayLike) -> ArrayLike:
     num = fft(vec)
     denom = fft(matrix)
     frac = [x/y for x, y in zip(num, denom)]
@@ -55,10 +56,11 @@ def circ_inv_mul(matrix: list[float], vec: list[float] | ndarray) -> ndarray:
 def encode(image: Image.Image) -> Image.Image:
     width, height = image.size
     result = Image.new("F", (width, height))
+    offsets = enc_coords(width, INDICES)
     for i in tqdm(range(width)):
         for j in range(height):
             value = 0
-            for dx, dy in enc_coords(width, INDICES):
+            for dx, dy in offsets:
                 value += image.getpixel(((i + dx) % width, (j + dy + (i + dx)//width) % height))
             result.putpixel((i, j), value / INDICES)
     return result
@@ -68,17 +70,15 @@ def decode(image: Image.Image) -> Image.Image:
     matrix = circulant_vec(image.size[0], INDICES)
     image_arr = asarray(image)
     shape = image_arr.shape
-    image_arr = image_arr.flatten()
-    decoded_arr = circ_inv_mul(matrix, image_arr)
+
+    decoded_arr = circ_inv_mul(matrix, image_arr.flatten())
     decoded_arr = reshape(decoded_arr, shape)
-    decoded = Image.fromarray(decoded_arr)
-    return decoded.convert("RGB")
+
+    return Image.fromarray(decoded_arr)
 
 
 if __name__ == "__main__":
-    image = Image.open("SECRET.png")
-    image = image.crop((0, 0, SIZE, SIZE))
-    image = image.convert("F")
+    image = Image.open("SECRET.png").crop((0, 0, SIZE, SIZE)).convert("F")
     image.convert("RGB").save("cropped.png")
 
     encoded = encode(image)
