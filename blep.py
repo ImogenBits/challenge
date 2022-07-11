@@ -9,31 +9,13 @@ SCALE = 32
 SIZE = 512 // SCALE
 INDICES = 32 // SCALE
 
-def check_circulant():
-    rows = []
-    for j in tqdm(range(SIZE)):
-        for i in range(SIZE):
-            row = []
-            di, dj = 1337, 42
-            for _ in range(INDICES):
-                di, dj = (di * di + dj) % SIZE, (dj * dj + di) % SIZE
-                row.append(((i + di) % SIZE, (j + dj + (i + di)//SIZE) % SIZE))
-            rows.append(sorted([x + y * SIZE for (x, y) in row]))
-
-    res = []
-    for r in tqdm(range(SIZE * SIZE - 1)):
-        res.append(rows[r] == [(i - 1) % (SIZE * SIZE) for i in rows[r + 1]])
-
-    print(any(res))
-
 
 def enc_coords(size: int, indices: int) -> list[tuple[int, int]]:
     out = []
-    i, j = 0, 0
     di, dj = 1337, 42
     for _ in range(indices):
         di, dj = (di * di + dj) % size, (dj * dj + di) % size
-        x, y = ((i + di) % size, (j + dj + (i + di)//size) % size)
+        x, y = (di % size, (dj + di//size) % size)
         out.append((x, y))
     return out
 
@@ -49,7 +31,7 @@ def circulant_vec(size: int, indices: int) -> list[float]:
 
 
 def assoc_poly():
-    sequence = circulant_vec()
+    sequence = circulant_vec(SIZE, SCALE)
     x = symbols("x")
     f = Poly(sequence[::-1], x)
     cg = [0] * (SIZE * SIZE + 1)
@@ -75,16 +57,14 @@ def encode(image: Image.Image) -> Image.Image:
     for i in tqdm(range(width)):
         for j in range(height):
             value = 0
-            di, dj = 1337, 42
-            for _ in range(INDICES):
-                di, dj = (di * di + dj) % width, (dj * dj + di) % height
-                value += image.getpixel(((i + di) % width, (j + dj + (i + di)//width) % height))
+            for dx, dy in enc_coords(width, INDICES):
+                value += image.getpixel(((i + dx) % width, (j + dy + (i + dx)//width) % height))
             result.putpixel((i, j), value / INDICES)
     return result
 
 
 def decode(image: Image.Image) -> Image.Image:
-    matrix = circulant_vec()
+    matrix = circulant_vec(image.size[0], INDICES)
     image_arr = asarray(image)
     shape = image_arr.shape
     image_arr = image_arr.flatten()
