@@ -2,7 +2,7 @@ from tqdm import tqdm
 from sympy.polys import Poly
 from sympy import symbols, gcd
 from PIL import Image
-from numpy import asarray, real, reshape
+from numpy import asarray, ndarray, real, reshape
 from numpy.typing import ArrayLike
 from numpy.fft import fft, ifft
 
@@ -53,15 +53,16 @@ def circ_inv_mul(matrix: ArrayLike, vec: ArrayLike) -> ArrayLike:
 
 def encode(image: Image.Image) -> Image.Image:
     width, height = image.size
-    result = Image.new("F", (width, height))
+    image_arr = asarray(image)
+    result = ndarray((width, height))
     offsets = enc_coords(width, INDICES)
     for i in tqdm(range(width)):
         for j in range(height):
             value = 0
             for dx, dy in offsets:
-                value += image.getpixel(((i + dx) % width, (j + dy + (i + dx)//width) % height))
-            result.putpixel((i, j), value / INDICES)
-    return result
+                value += image_arr[((i + dx) % width, (j + dy + (i + dx)//width) % height)]
+            result[i, j] = value / INDICES
+    return Image.fromarray(result)
 
 
 def decode(image: Image.Image) -> Image.Image:
