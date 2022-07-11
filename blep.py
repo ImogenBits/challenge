@@ -1,3 +1,4 @@
+from typing import Callable, Concatenate, ParamSpec, TypeVar
 from tqdm import tqdm
 from sympy.polys import Poly
 from sympy import symbols, gcd
@@ -9,6 +10,20 @@ from numpy.fft import fft, ifft
 SCALE = 2 ** 0
 SIZE = 512 // SCALE
 INDICES = 32 // SCALE
+
+
+P = ParamSpec("P")
+R = TypeVar("R")
+def convert_image(func: Callable[Concatenate[ArrayLike, int, P], ArrayLike]) -> Callable[Concatenate[Image.Image, P], Image.Image]:
+    def ret(image: Image.Image, *args: P.args, **kwargs: P.kwargs) -> Image.Image:
+        image_arr = asarray(image)
+        shape = image_arr.shape
+
+        decoded_arr = func(image_arr.flatten(), image.size[0], *args, **kwargs)
+        decoded_arr = reshape(decoded_arr, shape)
+
+        return Image.fromarray(decoded_arr)
+    return ret
 
 
 def enc_coords(size: int, indices: int) -> list[tuple[int, int]]:
@@ -65,15 +80,10 @@ def encode(image: Image.Image) -> Image.Image:
     return Image.fromarray(result)
 
 
-def decode(image: Image.Image) -> Image.Image:
-    matrix = circulant_vec(image.size[0], INDICES)
-    image_arr = asarray(image)
-    shape = image_arr.shape
-
-    decoded_arr = circ_inv_mul(matrix, image_arr.flatten())
-    decoded_arr = reshape(decoded_arr, shape)
-
-    return Image.fromarray(decoded_arr)
+@convert_image
+def decode(image: ArrayLike, size: int) -> ArrayLike:
+    matrix = circulant_vec(size, INDICES)
+    return circ_inv_mul(matrix, image)
 
 
 if __name__ == "__main__":
