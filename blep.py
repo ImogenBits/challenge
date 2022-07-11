@@ -1,11 +1,11 @@
 from tqdm import tqdm
 from sympy.polys import Poly
 from sympy import symbols, gcd
-from sympy.discrete.transforms import fft, ifft
 from PIL import Image
-from numpy import asarray, ndarray, reshape
+from numpy import asarray, ndarray, real, reshape
+from numpy.fft import fft, ifft
 
-SCALE = 32
+SCALE = 2 ** 3
 SIZE = 512 // SCALE
 INDICES = 32 // SCALE
 
@@ -23,7 +23,7 @@ def enc_coords(size: int, indices: int) -> list[tuple[int, int]]:
 def circulant_vec(size: int, indices: int) -> list[float]:
     sequence = [0.] * size * size
     for x, y in enc_coords(size, indices):
-        sequence[x + y * size] = 1
+        sequence[x + y * size] = 1 / INDICES
 
     sequence.append(sequence[0])
     sequence.pop(0)
@@ -44,11 +44,12 @@ def assoc_poly():
     print(res)
 
 
-def circ_inv_mul(matrix: list[float], vec: list[float] | ndarray) -> list[float]:
+def circ_inv_mul(matrix: list[float], vec: list[float] | ndarray) -> ndarray:
     num = fft(vec)
     denom = fft(matrix)
     frac = [x/y for x, y in zip(num, denom)]
-    return ifft(frac)
+    res = ifft(frac)
+    return real(res)
 
 
 def encode(image: Image.Image) -> Image.Image:
@@ -76,6 +77,15 @@ def decode(image: Image.Image) -> Image.Image:
 
 if __name__ == "__main__":
     image = Image.open("SECRET.png")
+    image = image.crop((0, 0, SIZE, SIZE))
+    image = image.convert("F")
+    image.convert("RGB").save("cropped.png")
+
+    encoded = encode(image)
+    encoded.convert("RGB").save("encoded.png")
+
+    decoded = decode(encoded)
+    decoded.convert("RGB").save("decoded.png")
     
 
 
