@@ -81,6 +81,15 @@ def encode(image: Image.Image) -> Image.Image:
 
 
 @convert_image
+def encode_fast(image: ArrayLike, size: int) -> ArrayLike:
+    matrix = circulant_vec(size, INDICES)
+    matrix = fft(matrix)
+    image = fft(image)
+    ret = ifft(matrix * image)
+    return real(ret)
+
+
+@convert_image
 def decode(image: ArrayLike, size: int) -> ArrayLike:
     matrix = circulant_vec(size, INDICES)
     return circ_inv_mul(matrix, image)
@@ -90,7 +99,7 @@ if __name__ == "__main__":
     image = Image.open("SECRET.png").crop((0, 0, SIZE, SIZE)).convert("F")
     image.convert("RGB").save("cropped.png")
 
-    encoded = encode(image)
+    encoded = encode_fast(image)
     encoded.convert("RGB").save("encoded.png")
 
     decoded = decode(encoded)
