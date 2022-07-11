@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Callable, Concatenate, ParamSpec, TypeVar
 from tqdm import tqdm
 from sympy.polys import Poly
@@ -6,6 +7,7 @@ from PIL import Image
 from numpy import asarray, ndarray, real, reshape
 from numpy.typing import ArrayLike
 from numpy.fft import fft, ifft
+from datetime import datetime
 
 SCALE = 2 ** 0
 SIZE = 512 // SCALE
@@ -24,6 +26,16 @@ def convert_image(func: Callable[Concatenate[ArrayLike, int, P], ArrayLike]) -> 
 
         return Image.fromarray(decoded_arr)
     return ret
+
+@dataclass
+class timed:
+    name: str
+
+    def __enter__(self):
+        self.start = datetime.now()
+    
+    def __exit__(self, _t, _v, _tr):
+        print(f"{self.name}: {(datetime.now() - self.start).total_seconds()}")
 
 
 def enc_coords(size: int, indices: int) -> list[tuple[int, int]]:
@@ -99,10 +111,16 @@ if __name__ == "__main__":
     image = Image.open("SECRET.png").crop((0, 0, SIZE, SIZE)).convert("F")
     image.convert("RGB").save("cropped.png")
 
-    encoded = encode_fast(image)
+    with timed("encode"):
+        encoded = encode(image)
     encoded.convert("RGB").save("encoded.png")
 
-    decoded = decode(encoded)
+    with timed("encode fast"):
+        encoded_fast = encode_fast(image)
+    encoded_fast.convert("RGB").save("encoded_fast.png")
+
+    with timed("decode"):
+        decoded = decode(encoded_fast)
     decoded.convert("RGB").save("decoded.png")
     
 
