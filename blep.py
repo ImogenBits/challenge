@@ -104,10 +104,10 @@ def decode(image: ArrayLike, size: int, indices: int) -> ArrayLike:
 
 
 if __name__ == "__main__":
-    SIZE = 512
+    SIZE = 1836
     INDICES = 32
 
-    image = Image.open("512.png").crop((0, 0, SIZE, SIZE)).convert("F")
+    image = Image.open("1836.png").crop((0, 0, SIZE, SIZE)).convert("F")
     image.convert("RGB").save("cropped.png")
 
     #with timed("encode"):
