@@ -1,6 +1,9 @@
 .vscode/
 *.png
 !SECRET.png
+!512.png
+!1024.png
+!1836.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

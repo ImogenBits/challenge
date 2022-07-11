@@ -111,16 +111,16 @@ if __name__ == "__main__":
     image = Image.open("SECRET.png").crop((0, 0, SIZE, SIZE)).convert("F")
     image.convert("RGB").save("cropped.png")
 
-    with timed("encode"):
-        encoded = encode(image)
-    encoded.convert("RGB").save("encoded.png")
+    #with timed("encode"):
+    #    encoded = encode(image)
+    #encoded.convert("RGB").save("encoded.png")
 
     with timed("encode fast"):
         encoded_fast = encode_fast(image)
     encoded_fast.convert("RGB").save("encoded_fast.png")
 
     with timed("decode"):
-        decoded = decode(encoded)
+        decoded = decode(encoded_fast)
     decoded.convert("RGB").save("decoded.png")
     
 
