@@ -9,10 +9,6 @@ from numpy.typing import ArrayLike
 from numpy.fft import fft, ifft
 from datetime import datetime
 
-SCALE = 2 ** 0
-SIZE = 512 // SCALE
-INDICES = 32 // SCALE
-
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -51,7 +47,7 @@ def enc_coords(size: int, indices: int) -> list[tuple[int, int]]:
 def circulant_vec(size: int, indices: int) -> list[float]:
     sequence = [0.] * size * size
     for x, y in enc_coords(size, indices):
-        sequence[x + y * size] = 1 / INDICES
+        sequence[x + y * size] = 1 / indices
 
     sequence.append(sequence[0])
     sequence.pop(0)
@@ -61,7 +57,7 @@ def circulant_vec(size: int, indices: int) -> list[float]:
 def invertible(matrix: list[float]) -> bool:
     x = symbols("x")
     f = Poly(matrix[::-1], x)
-    cg = [0] * (SIZE * SIZE + 1)
+    cg = [0] * (len(matrix) + 1)
     cg[0] = 1
     cg[-1] = -1
     g = Poly(cg, x)
@@ -78,23 +74,23 @@ def circ_inv_mul(matrix: ArrayLike, vec: ArrayLike) -> ArrayLike:
     return real(res)
 
 
-def encode(image: Image.Image) -> Image.Image:
+def encode(image: Image.Image, indices: int) -> Image.Image:
     width, height = image.size
     image_arr = asarray(image)
     result = ndarray((width, height))
-    offsets = enc_coords(width, INDICES)
+    offsets = enc_coords(width, indices)
     for y in tqdm(range(width)):
         for x in range(height):
             value = 0
             for dx, dy in offsets:
                 value += image_arr[((y + dy + (x + dx)//width) % height), (x + dx) % width]
-            result[y, x] = value / INDICES
+            result[y, x] = value / indices
     return Image.fromarray(result)
 
 
 @convert_image
-def encode_fast(image: ArrayLike, size: int) -> ArrayLike:
-    matrix = circulant_vec(size, INDICES)
+def encode_fast(image: ArrayLike, size: int, indices: int) -> ArrayLike:
+    matrix = circulant_vec(size, indices)
     matrix = fft(matrix)
     image = fft(image)
     ret = ifft(matrix * image)
@@ -102,25 +98,28 @@ def encode_fast(image: ArrayLike, size: int) -> ArrayLike:
 
 
 @convert_image
-def decode(image: ArrayLike, size: int) -> ArrayLike:
-    matrix = circulant_vec(size, INDICES)
+def decode(image: ArrayLike, size: int, indices: int) -> ArrayLike:
+    matrix = circulant_vec(size, indices)
     return circ_inv_mul(matrix, image)
 
 
 if __name__ == "__main__":
-    image = Image.open("SECRET.png").crop((0, 0, SIZE, SIZE)).convert("F")
+    SIZE = 512
+    INDICES = 32
+
+    image = Image.open("512.png").crop((0, 0, SIZE, SIZE)).convert("F")
     image.convert("RGB").save("cropped.png")
 
     #with timed("encode"):
-    #    encoded = encode(image)
+    #    encoded = encode(image, INDICES)
     #encoded.convert("RGB").save("encoded.png")
 
     with timed("encode fast"):
-        encoded_fast = encode_fast(image)
+        encoded_fast = encode_fast(image, INDICES)
     encoded_fast.convert("RGB").save("encoded_fast.png")
 
     with timed("decode"):
-        decoded = decode(encoded_fast)
+        decoded = decode(encoded_fast, INDICES)
     decoded.convert("RGB").save("decoded.png")
     
 
